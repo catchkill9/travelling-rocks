@@ -283,19 +283,19 @@ LANGS.ie = Object.assign({}, LANGS.en, { name: "English (Ireland)", flag: "🇮�
   no_numbers: "Just the park name, no numbers, grand 😊",
   r2: "🌿 Be sound to nature.", r4: "🤫 Keep the new hiding spot a secret, go way!",
   just_painted: "Only after being painted! 🎨", label_hide: "then hide me again, sound! 🌍" });
-// Show US and Irish English right after UK in the list.
-{ const order = ["en", "us", "ie"]; Object.keys(LANGS).forEach(k => { if (!order.includes(k)) order.push(k); });
+// Lily's choice: only Irish English in the list. British English stays hidden as the base for missing words.
+const EN = LANGS.en;
+delete LANGS.en; delete LANGS.us;
+{ const order = ["ie"]; Object.keys(LANGS).forEach(k => { if (!order.includes(k)) order.push(k); });
   const copy = Object.assign({}, LANGS); order.forEach(k => { delete LANGS[k]; LANGS[k] = copy[k]; }); }
 
 let lang = (() => {
   try { const s = localStorage.getItem("travelling-rocks-lang"); if (LANGS[s]) return s; } catch (e) { /* ignore */ }
-  if (navigator.language === "en-US") return "us";
-  if (navigator.language === "en-IE") return "ie";
   const b = (navigator.language || "en").slice(0, 2);
-  return LANGS[b] ? b : "en";
+  return LANGS[b] ? b : "ie";
 })();
 function t(key, vars = {}) {
-  let s = (LANGS[lang] && LANGS[lang][key]) || LANGS.en[key] || key;
+  let s = (LANGS[lang] && LANGS[lang][key]) || EN[key] || key;
   Object.keys(vars).forEach(k => { s = s.replace(`{${k}}`, vars[k]); });
   return s;
 }
