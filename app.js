@@ -117,7 +117,7 @@ function getFaceDetector() {
     const files = await v.FilesetResolver.forVisionTasks(`${MP}/wasm`);
     return v.FaceDetector.createFromOptions(files, {
       baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite" },
-      runningMode: "IMAGE", minDetectionConfidence: 0.4,
+      runningMode: "IMAGE", minDetectionConfidence: 0.7,
     });
   })().catch(() => null);
   return detectorPromise;
@@ -134,13 +134,29 @@ async function coverFaces(c) {
     }
   } catch (e) { /* ignore */ }
   const ctx = c.getContext("2d");
-  boxes.filter(Boolean).forEach(b => {
+  // A painted face on a rock can look like a face to the detector.
+  // Real faces have skin colour, painted rocks usually don't, so we check the middle of each box first.
+  const real = boxes.filter(Boolean).filter(b => skinRatio(ctx, b) >= 0.25);
+  real.forEach(b => {
     const size = Math.max(b.w, b.h) * 1.5;
     ctx.font = `${size}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(FACE_EMOJIS[Math.floor(Math.random() * FACE_EMOJIS.length)], b.x + b.w / 2, b.y + b.h / 2);
   });
-  return boxes.length;
+  return real.length;
+}
+function skinRatio(ctx, b) {
+  const x = Math.max(0, Math.round(b.x + b.w * 0.25)), y = Math.max(0, Math.round(b.y + b.h * 0.25));
+  const w = Math.max(1, Math.round(b.w * 0.5)), h = Math.max(1, Math.round(b.h * 0.5));
+  let px; try { px = ctx.getImageData(x, y, w, h).data; } catch (e) { return 1; }
+  let skin = 0, n = 0;
+  for (let i = 0; i < px.length; i += 16) {
+    const r = px[i], g = px[i + 1], bl = px[i + 2];
+    const cb = 128 - 0.169 * r - 0.331 * g + 0.5 * bl, cr = 128 + 0.5 * r - 0.419 * g - 0.081 * bl;
+    if (cb >= 77 && cb <= 127 && cr >= 133 && cr <= 173 && r > g) skin++;
+    n++;
+  }
+  return n ? skin / n : 0;
 }
 document.addEventListener("change", e => { if (e.target.name === "photo") getFaceDetector(); });
 
