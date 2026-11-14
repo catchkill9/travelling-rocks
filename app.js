@@ -62,7 +62,15 @@ const coord = (place, area) => AREAS[area] || PLACES[place];
 const label = (place, area) => area ? `${area}, ${place.split(", ")[0]}` : place;
 
 const COLORS = ["#ffadad", "#ffd6a5", "#fdffb6", "#caffbf", "#9bf6ff", "#a0c4ff", "#bdb2ff", "#ffc6ff"];
-const EMOJIS = ["🌊", "⭐", "🦋", "🌈", "🐞", "🌻", "🐬", "🍀", "🦄", "🐢"];
+const EMOJIS = [
+  "🌊", "⭐", "🌟", "✨", "🌈", "☀️", "🌙", "⚡", "❄️", "🔥", "💧", "🌍", "🪐", "🚀", "🛸",
+  "🦋", "🐞", "🐝", "🐢", "🐬", "🐳", "🐙", "🦀", "🐠", "🦈", "🐸", "🦊", "🐱", "🐶", "🐰",
+  "🐼", "🐨", "🦁", "🐯", "🐵", "🦄", "🐉", "🦖", "🦕", "🦉", "🦜", "🐧", "🦩", "🐌", "🦔",
+  "🌻", "🌸", "🌷", "🌹", "🌺", "🍀", "🌵", "🌴", "🍄", "🍁", "🌳",
+  "🍓", "🍉", "🍒", "🍋", "🍑", "🥑", "🍭", "🧁", "🍦",
+  "❤️", "🧡", "💛", "💚", "💙", "💜", "🩷", "💖", "💎", "👑", "🎀", "🎈", "🎨", "🎵", "⚽", "🏀",
+  "😀", "😎", "🤓", "🥰", "😝", "🥴", "🤩", "😇", "🤪", "👻", "👽", "🤖", "💩", "🎃",
+];
 
 const SAMPLE_ROCKS = [
   { id: 1, name: "Lily", emoji: "🦋", color: "#ffd6a5", painter: "Lily",
@@ -108,7 +116,7 @@ function readPhoto(file) {
 }
 // Face stickers: finds faces in the photo (on this phone, nothing is sent anywhere)
 // and puts a fun emoji on each one. Uses Google's free MediaPipe face detector.
-const FACE_EMOJIS = ["🥴", "😝", "☺️", "🥰", "😀", "😃", "😄", "😁", "😆", "😎", "🤓"];
+const FACE_EMOJIS = ["🥴", "😝", "☺️", "🥰", "😀", "😃", "😄", "😁", "😆", "😎", "🤓", "🤩", "😇", "🤪", "😜", "😛", "🥳", "😺", "🐶", "🐱", "🐼", "🐸", "🐵", "🦄", "👽", "🤖", "👻", "🤡", "🙃", "😋"];
 const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 let detectorPromise = null;
 function getFaceDetector() {
