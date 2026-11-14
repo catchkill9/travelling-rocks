@@ -355,8 +355,6 @@ function classPage() {
         ${photoInput}
         <label>No photo? Pick an emoji instead</label>
         <select name="emoji">${EMOJIS.map(e => `<option>${e}</option>`).join("")}</select>
-        <label>Colour</label>
-        <select name="color">${COLORS.map((c, i) => `<option value="${c}">Colour ${i + 1}</option>`).join("")}</select>
         <button class="btn" type="submit">Add rock 🪨</button>
       </form>
     </div>
@@ -373,7 +371,7 @@ function classPage() {
     const d = Object.fromEntries(new FormData(e.target));
     const photo = await readPhoto(d.photo);
     const id = rocks.reduce((m, r) => Math.max(m, r.id), 0) + 1;
-    rocks.push({ id, name: d.name.trim(), painter: d.painter.trim() || "a rock artist", emoji: d.emoji, color: d.color, photo,
+    rocks.push({ id, name: d.name.trim(), painter: d.painter.trim() || "a rock artist", emoji: d.emoji, color: COLORS[id % COLORS.length], photo,
       journey: [{ date: new Date().toISOString().slice(0, 10), found: "Dublin, Ireland", note: "Just painted! 🎨" }] });
     save();
     classPage();
