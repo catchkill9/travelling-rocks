@@ -1,10 +1,10 @@
 :root {
-  --sea: #1f6f8b;
-  --sand: #fff6e5;
-  --rock: #8a7f72;
-  --sun: #ffb703;
-  --coral: #fb6f61;
-  --ink: #23303a;
+  --sea: #b3122e;
+  --sand: #fff1f1;
+  --rock: #9b5a5a;
+  --sun: #ffccd2;
+  --coral: #e63946;
+  --ink: #3a1015;
 }
 * { box-sizing: border-box; }
 body {
@@ -39,7 +39,7 @@ footer { text-align: center; padding: 24px 16px; color: #666; font-size: .9rem; 
 h1, h2 { color: var(--sea); }
 .hero {
   text-align: center; padding: 28px 16px; border-radius: 20px;
-  background: linear-gradient(135deg, #bde0fe, #ffd6a5);
+  background: linear-gradient(135deg, #ffb3b3, #ff6b6b);
 }
 .hero h1 { font-size: 2.2rem; margin: 0 0 8px; }
 .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 20px 0; }
@@ -83,7 +83,7 @@ label { font-weight: 600; }
 .timeline li::before {
   content: "📍"; position: absolute; left: -14px; top: 2px; background: var(--sand);
 }
-.notice { background: #fff3c4; border-radius: 12px; padding: 10px 14px; margin: 12px 0; }
+.notice { background: #ffe0e3; border-radius: 12px; padding: 10px 14px; margin: 12px 0; }
 .ok { background: #d8f3dc; }
 .rules li { margin-bottom: 8px; }
 .labels { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }

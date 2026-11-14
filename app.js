@@ -38,6 +38,29 @@ const PLACES = {
   "Cape Town, South Africa": [-33.92, 18.42],
 };
 
+// Parks and neighbourhoods (Dad's rule: a park or area name is OK, never a street, address or exact spot).
+// The map pin goes in the middle of the area.
+const AREAS = {
+  "Marlay Park": [53.274, -6.271],
+  "Bushy Park": [53.307, -6.271],
+  "St Enda's Park": [53.288, -6.290],
+  "Rathfarnham": [53.298, -6.283],
+  "Templeogue": [53.296, -6.308],
+  "Tymon Park": [53.300, -6.335],
+  "Dundrum": [53.290, -6.244],
+  "Ticknock": [53.255, -6.255],
+  "Herbert Park": [53.326, -6.234],
+  "St Stephen's Green": [53.338, -6.259],
+  "Phoenix Park": [53.356, -6.330],
+  "Cabinteely Park": [53.262, -6.152],
+  "Killiney Hill": [53.264, -6.110],
+  "Howth": [53.378, -6.067],
+  "Bray": [53.203, -6.098],
+};
+const areaOptions = `<datalist id="areas">${Object.keys(AREAS).map(a => `<option value="${a}">`).join("")}</datalist>`;
+const coord = (place, area) => AREAS[area] || PLACES[place];
+const label = (place, area) => area ? `${area}, ${place.split(", ")[0]}` : place;
+
 const COLORS = ["#ffadad", "#ffd6a5", "#fdffb6", "#caffbf", "#9bf6ff", "#a0c4ff", "#bdb2ff", "#ffc6ff"];
 const EMOJIS = ["🌊", "⭐", "🦋", "🌈", "🐞", "🌻", "🐬", "🍀", "🦄", "🐢"];
 
@@ -93,7 +116,9 @@ const app = document.getElementById("app");
 let activeMap = null;
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const lastPlace = r => r.journey.length ? r.journey[r.journey.length - 1].hidden : "Dublin, Ireland";
+const lastStop = r => r.journey[r.journey.length - 1] || { hidden: "Dublin, Ireland" };
+const lastPlace = r => label(lastStop(r).hidden, lastStop(r).hiddenArea);
+const lastCoord = r => coord(lastStop(r).hidden, lastStop(r).hiddenArea);
 const placeOptions = sel => Object.keys(PLACES).map(p => `<option ${p === sel ? "selected" : ""}>${p}</option>`).join("");
 const rockBadge = r => safeSrc(r.photo)
   ? `<img class="rock-photo" src="${safeSrc(r.photo)}" alt="${esc(r.name)}">`
@@ -105,24 +130,25 @@ function makeMap(el, rockList) {
   if (typeof L === "undefined") { el.innerHTML = "<p class='notice'>The map could not load right now 🗺️</p>"; return; }
   activeMap = L.map(el, { scrollWheelZoom: false }).setView([50, 5], 3);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap", maxZoom: 8,
+    attribution: "&copy; OpenStreetMap", maxZoom: 13,
   }).addTo(activeMap);
   const bounds = [];
   rockList.forEach(r => {
     const path = [];
-    r.journey.forEach(j => [j.found, j.hidden].forEach(p => {
-      const c = PLACES[p];
+    r.journey.forEach(j => [[j.found, j.foundArea], [j.hidden, j.hiddenArea]].forEach(([p, a]) => {
+      const c = coord(p, a);
       if (c && (!path.length || path[path.length - 1] !== c)) path.push(c);
     }));
     if (path.length > 1) L.polyline(path, { color: r.color === "#fdffb6" ? "#e0a800" : r.color, weight: 4, dashArray: "6 8" }).addTo(activeMap);
-    const now = PLACES[lastPlace(r)];
+    const now = lastCoord(r);
     if (now) {
       L.marker(now).addTo(activeMap).bindPopup(`${esc(r.emoji)} <b>#${r.id} ${esc(r.name)}</b><br>${esc(lastPlace(r))}<br><a href="#rock/${r.id}">See journey</a>`);
       bounds.push(now);
     }
     path.forEach(p => bounds.push(p));
   });
-  if (bounds.length > 1) activeMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 6 });
+  if (bounds.length > 1) activeMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+  else if (bounds.length === 1) activeMap.setView(bounds[0], 11);
 }
 
 // ---------- Pages ----------
@@ -189,7 +215,7 @@ function rockPage(id) {
       <div id="map"></div>
       <h2>📜 Journey</h2>
       <ul class="timeline">
-        ${r.journey.map(j => `<li><b>${esc(j.date)}</b>: found in ${esc(j.found)}, hidden in <b>${esc(j.hidden)}</b>${j.note ? `<br><i>${esc(j.note)}</i>` : ""}${safeSrc(j.photo) ? `<br><img class="journey-photo" src="${safeSrc(j.photo)}" alt="Rock photo">` : ""}</li>`).join("")}
+        ${r.journey.map(j => `<li><b>${esc(j.date)}</b>: found in ${esc(label(j.found, j.foundArea))}, hidden in <b>${esc(label(j.hidden, j.hiddenArea))}</b>${j.note ? `<br><i>${esc(j.note)}</i>` : ""}${safeSrc(j.photo) ? `<br><img class="journey-photo" src="${safeSrc(j.photo)}" alt="Rock photo">` : ""}</li>`).join("")}
       </ul>
       <form id="pic" class="no-print">
         ${photoInput}
@@ -212,19 +238,26 @@ function found(id = "") {
     <h1>🎉 I Found a Rock!</h1>
     <div class="card">
       <p>Yay, you found a Travelling Rock! Tell us about it so we can follow its journey.</p>
-      <div class="notice">🛡️ Only write the <b>city</b>, never your home address, your full name or your school.</div>
+      <div class="notice">🛡️ Write only the <b>park or area name</b> (like Marlay Park). Never a street, house number, Eircode, your full name or your school.</div>
+      ${areaOptions}
       <form id="f">
         <label>Rock number or name</label>
         <input name="rock" required value="${esc(id)}" placeholder="e.g. 2 or Rocky">
-        <label>Where did you find it? (city)</label>
+        ${photoInput}
+        <h2>🔎 Where did you find it?</h2>
+        <label>Park or area name</label>
+        <input name="foundArea" list="areas" maxlength="40" placeholder="e.g. Marlay Park">
+        <label>City</label>
         <select name="found">${placeOptions("Dublin, Ireland")}</select>
         <label>Date you found it</label>
         <input type="date" name="date" value="${today}" required>
-        <label>Where did you hide it again? (city)</label>
+        <h2>🌳 Where did you hide it again?</h2>
+        <label>Park or area name</label>
+        <input name="hiddenArea" list="areas" maxlength="40" placeholder="e.g. Bushy Park">
+        <label>City</label>
         <select name="hidden">${placeOptions("Dublin, Ireland")}</select>
         <label>A short message (optional)</label>
         <input name="note" maxlength="120" placeholder="e.g. Found it near a big tree! 🌳">
-        ${photoInput}
         <button class="btn" type="submit">Update journey 🚀</button>
       </form>
       <div id="msg"></div>
@@ -238,7 +271,9 @@ function found(id = "") {
     const r = rocks.find(x => String(x.id) === key || x.name.toLowerCase() === key);
     const msg = document.getElementById("msg");
     if (!r) { msg.innerHTML = `<p class="notice">Hmm, no rock called "${esc(d.rock)}". Check the number on the rock 🔎</p>`; return; }
-    r.journey.push({ date: d.date, found: d.found, hidden: d.hidden, note: d.note.slice(0, 120), photo });
+    const foundArea = (d.foundArea || "").trim().slice(0, 40), hiddenArea = (d.hiddenArea || "").trim().slice(0, 40);
+    if (/\d/.test(foundArea + hiddenArea)) { msg.innerHTML = `<p class="notice">🛡️ Only the park or area name please, no numbers (no house number or Eircode).</p>`; return; }
+    r.journey.push({ date: d.date, found: d.found, foundArea, hidden: d.hidden, hiddenArea, note: d.note.slice(0, 120), photo });
     if (photo && !r.photo) r.photo = photo;
     if (!save()) { r.journey.pop(); return; }
     location.hash = `#rock/${r.id}`;
@@ -258,7 +293,7 @@ function rules() {
         <li>🚫 Don't leave a rock where it's not allowed to take or leave things.</li>
         <li>🤔 Not sure it's allowed? Don't hide it there.</li>
         <li>👨‍👩‍👧 Younger kids play together with an adult.</li>
-        <li>🔒 On the website, write only the city. Never your address, full name, school or photos of people.</li>
+        <li>🔒 On the website, write only the park or area name (like Marlay Park). Never a street, address, full name, school or photos of people.</li>
       </ul>
     </div>`;
 }
