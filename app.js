@@ -83,7 +83,7 @@ function readPhoto(file) {
     img.src = URL.createObjectURL(file);
   });
 }
-const photoInput = `<label>📸 Photo of the rock (optional)</label>
+const photoInput = `<label>📸 Take a photo of the rock</label>
         <input type="file" name="photo" accept="image/*" capture="environment">
         <div class="notice">📸 Photo of the <b>rock only</b>: no people, faces, houses or street signs.</div>`;
 const safeSrc = s => typeof s === "string" && s.startsWith("data:image/") ? s : "";
@@ -273,11 +273,11 @@ function classPage() {
         <input name="name" required maxlength="30" placeholder="e.g. Sparkle">
         <label>Painted by (first name only, or "5th class")</label>
         <input name="painter" maxlength="30" placeholder="5th class">
-        <label>Rock picture</label>
+        ${photoInput}
+        <label>No photo? Pick an emoji instead</label>
         <select name="emoji">${EMOJIS.map(e => `<option>${e}</option>`).join("")}</select>
         <label>Colour</label>
         <select name="color">${COLORS.map((c, i) => `<option value="${c}">Colour ${i + 1}</option>`).join("")}</select>
-        ${photoInput}
         <button class="btn" type="submit">Add rock 🪨</button>
       </form>
     </div>
