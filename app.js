@@ -100,12 +100,50 @@ function readPhoto(file) {
       c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
       c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(img.src);
-      resolve(c.toDataURL("image/jpeg", 0.75));
+      coverFaces(c).finally(() => resolve(c.toDataURL("image/jpeg", 0.75)));
     };
     img.onerror = () => resolve("");
     img.src = URL.createObjectURL(file);
   });
 }
+// Face stickers: finds faces in the photo (on this phone, nothing is sent anywhere)
+// and puts a fun emoji on each one. Uses Google's free MediaPipe face detector.
+const FACE_EMOJIS = ["🥴", "😝", "☺️", "🥰", "😀", "😃", "😄", "😁", "😆", "😎", "🤓"];
+const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+let detectorPromise = null;
+function getFaceDetector() {
+  if (!detectorPromise) detectorPromise = (async () => {
+    const v = await import(`${MP}/vision_bundle.mjs`);
+    const files = await v.FilesetResolver.forVisionTasks(`${MP}/wasm`);
+    return v.FaceDetector.createFromOptions(files, {
+      baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite" },
+      runningMode: "IMAGE", minDetectionConfidence: 0.4,
+    });
+  })().catch(() => null);
+  return detectorPromise;
+}
+async function coverFaces(c) {
+  const boxes = [];
+  try {
+    const det = await getFaceDetector();
+    if (det) det.detect(c).detections.forEach(d => boxes.push(d.boundingBox && { x: d.boundingBox.originX, y: d.boundingBox.originY, w: d.boundingBox.width, h: d.boundingBox.height }));
+  } catch (e) { /* ignore */ }
+  try {
+    if (!boxes.length && "FaceDetector" in window) {
+      (await new window.FaceDetector().detect(c)).forEach(f => boxes.push({ x: f.boundingBox.x, y: f.boundingBox.y, w: f.boundingBox.width, h: f.boundingBox.height }));
+    }
+  } catch (e) { /* ignore */ }
+  const ctx = c.getContext("2d");
+  boxes.filter(Boolean).forEach(b => {
+    const size = Math.max(b.w, b.h) * 1.5;
+    ctx.font = `${size}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(FACE_EMOJIS[Math.floor(Math.random() * FACE_EMOJIS.length)], b.x + b.w / 2, b.y + b.h / 2);
+  });
+  return boxes.length;
+}
+document.addEventListener("change", e => { if (e.target.name === "photo") getFaceDetector(); });
+
 const photoInput = `<label>📸 Take a photo of the rock (just the rock!)</label>
         <input type="file" name="photo" accept="image/*" capture="environment">`;
 const safeSrc = s => typeof s === "string" && s.startsWith("data:image/") ? s : "";
