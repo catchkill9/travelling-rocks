@@ -72,7 +72,7 @@ const SAMPLE_ROCKS = [
   { id: 2, name: "Rocky", emoji: "⭐", color: "#9bf6ff", painter: "5th class",
     journey: [
       { date: "2026-11-10", found: "Dublin, Ireland", hidden: "Dublin, Ireland", note: "Painted in class" },
-      { date: "2026-11-12", found: "Dublin, Ireland", hidden: "Paris, France", note: "Flew to Paris with a family on holiday ✈️" },
+      { date: "2026-11-12", found: "Paris, France", note: "Someone took me to Paris on holiday ✈️" },
     ] },
 ];
 
@@ -116,14 +116,15 @@ const app = document.getElementById("app");
 let activeMap = null;
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const lastStop = r => r.journey[r.journey.length - 1] || { hidden: "Dublin, Ireland" };
-const lastPlace = r => label(lastStop(r).hidden, lastStop(r).hiddenArea);
-const lastCoord = r => coord(lastStop(r).hidden, lastStop(r).hiddenArea);
+// Where it is hidden now is a secret: we only show where it was last FOUND.
+const lastStop = r => r.journey[r.journey.length - 1] || { found: "Dublin, Ireland" };
+const lastPlace = r => label(lastStop(r).found, lastStop(r).foundArea);
+const lastCoord = r => coord(lastStop(r).found, lastStop(r).foundArea);
 const placeOptions = sel => Object.keys(PLACES).map(p => `<option ${p === sel ? "selected" : ""}>${p}</option>`).join("");
 const rockBadge = r => safeSrc(r.photo)
   ? `<img class="rock-photo" src="${safeSrc(r.photo)}" alt="${esc(r.name)}">`
   : `<div class="rock-emoji" style="background:${esc(r.color)}">${esc(r.emoji)}</div>`;
-const countries = r => new Set(r.journey.flatMap(j => [j.found, j.hidden]).map(p => p.split(", ")[1])).size;
+const countries = r => new Set(r.journey.map(j => j.found.split(", ")[1])).size;
 
 function makeMap(el, rockList) {
   if (activeMap) { activeMap.remove(); activeMap = null; }
@@ -135,10 +136,10 @@ function makeMap(el, rockList) {
   const bounds = [];
   rockList.forEach(r => {
     const path = [];
-    r.journey.forEach(j => [[j.found, j.foundArea], [j.hidden, j.hiddenArea]].forEach(([p, a]) => {
-      const c = coord(p, a);
+    r.journey.forEach(j => {
+      const c = coord(j.found, j.foundArea);
       if (c && (!path.length || path[path.length - 1] !== c)) path.push(c);
-    }));
+    });
     if (path.length > 1) L.polyline(path, { color: r.color === "#fdffb6" ? "#e0a800" : r.color, weight: 4, dashArray: "6 8" }).addTo(activeMap);
     const now = lastCoord(r);
     if (now) {
@@ -166,7 +167,7 @@ function home() {
       <div class="card step"><div class="num">🎨</div><b>1. Paint</b><br>Every student paints a rock and gives it a special name.</div>
       <div class="card step"><div class="num">🌳</div><b>2. Hide</b><br>Take it on a trip and hide it in a safe, allowed place.</div>
       <div class="card step"><div class="num">🔎</div><b>3. Find</b><br>Found a rock? Come here and tell us where!</div>
-      <div class="card step"><div class="num">✈️</div><b>4. Hide again</b><br>Hide it somewhere new so the journey continues.</div>
+      <div class="card step"><div class="num">✈️</div><b>4. Hide again</b><br>Hide it in a different park. Shh, don't tell anyone where! 🤫</div>
     </div>
     <div class="card">
       <h2>🗺️ Where are the rocks now?</h2>
@@ -206,7 +207,7 @@ function rockPage(id) {
       ${rockBadge(r)}
       <h1>#${r.id} ${esc(r.name)}</h1>
       <p>🎨 Painted by: ${esc(r.painter || "a 5th class student")}<br>
-      📍 Now hiding in: <b>${esc(lastPlace(r))}</b><br>
+      📍 Last found in: <b>${esc(lastPlace(r))}</b> (now hiding somewhere new 🤫)<br>
       🌍 Countries visited: ${countries(r)} · Updates: ${r.journey.length}</p>
       <a class="btn" href="#found/${r.id}">I found this rock! 🎉</a>
     </div>
@@ -215,7 +216,7 @@ function rockPage(id) {
       <div id="map"></div>
       <h2>📜 Journey</h2>
       <ul class="timeline">
-        ${r.journey.map(j => `<li><b>${esc(j.date)}</b>: found in ${esc(label(j.found, j.foundArea))}, hidden in <b>${esc(label(j.hidden, j.hiddenArea))}</b>${j.note ? `<br><i>${esc(j.note)}</i>` : ""}${safeSrc(j.photo) ? `<br><img class="journey-photo" src="${safeSrc(j.photo)}" alt="Rock photo">` : ""}</li>`).join("")}
+        ${r.journey.map(j => `<li><b>${esc(j.date)}</b>: found in <b>${esc(label(j.found, j.foundArea))}</b>${j.note ? `<br><i>${esc(j.note)}</i>` : ""}${safeSrc(j.photo) ? `<br><img class="journey-photo" src="${safeSrc(j.photo)}" alt="Rock photo">` : ""}</li>`).join("")}
       </ul>
       <form id="pic" class="no-print">
         ${photoInput}
@@ -251,11 +252,7 @@ function found(id = "") {
         <select name="found">${placeOptions("Dublin, Ireland")}</select>
         <label>Date you found it</label>
         <input type="date" name="date" value="${today}" required>
-        <h2>🌳 Where did you hide it again?</h2>
-        <label>Park or area name</label>
-        <input name="hiddenArea" list="areas" maxlength="40" placeholder="e.g. Bushy Park">
-        <label>City</label>
-        <select name="hidden">${placeOptions("Dublin, Ireland")}</select>
+        <div class="notice">🤫 Now hide the rock in a <b>different park</b>, and don't tell anyone where! The next person who finds it will tell us.</div>
         <label>A short message (optional)</label>
         <input name="note" maxlength="120" placeholder="e.g. Found it near a big tree! 🌳">
         <button class="btn" type="submit">Update journey 🚀</button>
@@ -271,9 +268,9 @@ function found(id = "") {
     const r = rocks.find(x => String(x.id) === key || x.name.toLowerCase() === key);
     const msg = document.getElementById("msg");
     if (!r) { msg.innerHTML = `<p class="notice">Hmm, no rock called "${esc(d.rock)}". Check the number on the rock 🔎</p>`; return; }
-    const foundArea = (d.foundArea || "").trim().slice(0, 40), hiddenArea = (d.hiddenArea || "").trim().slice(0, 40);
-    if (/\d/.test(foundArea + hiddenArea)) { msg.innerHTML = `<p class="notice">🛡️ Only the park or area name please, no numbers (no house number or Eircode).</p>`; return; }
-    r.journey.push({ date: d.date, found: d.found, foundArea, hidden: d.hidden, hiddenArea, note: d.note.slice(0, 120), photo });
+    const foundArea = (d.foundArea || "").trim().slice(0, 40);
+    if (/\d/.test(foundArea)) { msg.innerHTML = `<p class="notice">🛡️ Only the park or area name please, no numbers (no house number or Eircode).</p>`; return; }
+    r.journey.push({ date: d.date, found: d.found, foundArea, note: d.note.slice(0, 120), photo });
     if (photo && !r.photo) r.photo = photo;
     if (!save()) { r.journey.pop(); return; }
     location.hash = `#rock/${r.id}`;
