@@ -60,7 +60,33 @@ function load() {
   } catch (e) { /* ignore */ }
   return JSON.parse(JSON.stringify(SAMPLE_ROCKS));
 }
-function save() { localStorage.setItem("travelling-rocks", JSON.stringify(rocks)); }
+function save() {
+  try { localStorage.setItem("travelling-rocks", JSON.stringify(rocks)); return true; }
+  catch (e) { alert("Not enough space to save more photos on this device 😕"); return false; }
+}
+
+// Shrinks a photo to max 600px and re-saves it as JPEG.
+// Re-drawing removes hidden photo data (like GPS location), which keeps everyone safe.
+function readPhoto(file) {
+  return new Promise(resolve => {
+    if (!file || !file.size) return resolve("");
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, 600 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL("image/jpeg", 0.75));
+    };
+    img.onerror = () => resolve("");
+    img.src = URL.createObjectURL(file);
+  });
+}
+const photoInput = `<label>📸 Photo of the rock (optional)</label>
+        <input type="file" name="photo" accept="image/*" capture="environment">
+        <div class="notice">📸 Photo of the <b>rock only</b>: no people, faces, houses or street signs.</div>`;
+const safeSrc = s => typeof s === "string" && s.startsWith("data:image/") ? s : "";
 
 let rocks = load();
 const app = document.getElementById("app");
@@ -69,7 +95,9 @@ let activeMap = null;
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const lastPlace = r => r.journey.length ? r.journey[r.journey.length - 1].hidden : "Dublin, Ireland";
 const placeOptions = sel => Object.keys(PLACES).map(p => `<option ${p === sel ? "selected" : ""}>${p}</option>`).join("");
-const rockBadge = r => `<div class="rock-emoji" style="background:${esc(r.color)}">${esc(r.emoji)}</div>`;
+const rockBadge = r => safeSrc(r.photo)
+  ? `<img class="rock-photo" src="${safeSrc(r.photo)}" alt="${esc(r.name)}">`
+  : `<div class="rock-emoji" style="background:${esc(r.color)}">${esc(r.emoji)}</div>`;
 const countries = r => new Set(r.journey.flatMap(j => [j.found, j.hidden]).map(p => p.split(", ")[1])).size;
 
 function makeMap(el, rockList) {
@@ -161,10 +189,21 @@ function rockPage(id) {
       <div id="map"></div>
       <h2>📜 Journey</h2>
       <ul class="timeline">
-        ${r.journey.map(j => `<li><b>${esc(j.date)}</b>: found in ${esc(j.found)}, hidden in <b>${esc(j.hidden)}</b>${j.note ? `<br><i>${esc(j.note)}</i>` : ""}</li>`).join("")}
+        ${r.journey.map(j => `<li><b>${esc(j.date)}</b>: found in ${esc(j.found)}, hidden in <b>${esc(j.hidden)}</b>${j.note ? `<br><i>${esc(j.note)}</i>` : ""}${safeSrc(j.photo) ? `<br><img class="journey-photo" src="${safeSrc(j.photo)}" alt="Rock photo">` : ""}</li>`).join("")}
       </ul>
+      <form id="pic" class="no-print">
+        ${photoInput}
+        <button class="btn secondary" type="submit">${safeSrc(r.photo) ? "Change photo 📸" : "Add photo 📸"}</button>
+      </form>
     </div>`;
   makeMap(document.getElementById("map"), [r]);
+  document.getElementById("pic").addEventListener("submit", async e => {
+    e.preventDefault();
+    const photo = await readPhoto(e.target.photo.files[0]);
+    if (!photo) return;
+    r.photo = photo;
+    if (save()) rockPage(r.id);
+  });
 }
 
 function found(id = "") {
@@ -185,20 +224,23 @@ function found(id = "") {
         <select name="hidden">${placeOptions("Dublin, Ireland")}</select>
         <label>A short message (optional)</label>
         <input name="note" maxlength="120" placeholder="e.g. Found it near a big tree! 🌳">
+        ${photoInput}
         <button class="btn" type="submit">Update journey 🚀</button>
       </form>
       <div id="msg"></div>
     </div>
     <p>Can't see your city? Pick the closest one. 😊</p>`;
-  document.getElementById("f").addEventListener("submit", e => {
+  document.getElementById("f").addEventListener("submit", async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
+    const photo = await readPhoto(d.photo);
     const key = d.rock.trim().toLowerCase().replace("#", "");
     const r = rocks.find(x => String(x.id) === key || x.name.toLowerCase() === key);
     const msg = document.getElementById("msg");
     if (!r) { msg.innerHTML = `<p class="notice">Hmm, no rock called "${esc(d.rock)}". Check the number on the rock 🔎</p>`; return; }
-    r.journey.push({ date: d.date, found: d.found, hidden: d.hidden, note: d.note.slice(0, 120) });
-    save();
+    r.journey.push({ date: d.date, found: d.found, hidden: d.hidden, note: d.note.slice(0, 120), photo });
+    if (photo && !r.photo) r.photo = photo;
+    if (!save()) { r.journey.pop(); return; }
     location.hash = `#rock/${r.id}`;
   });
 }
@@ -235,6 +277,7 @@ function classPage() {
         <select name="emoji">${EMOJIS.map(e => `<option>${e}</option>`).join("")}</select>
         <label>Colour</label>
         <select name="color">${COLORS.map((c, i) => `<option value="${c}">Colour ${i + 1}</option>`).join("")}</select>
+        ${photoInput}
         <button class="btn" type="submit">Add rock 🪨</button>
       </form>
     </div>
@@ -246,11 +289,12 @@ function classPage() {
         ${rocks.map(r => `<div class="label"><b>🪨 Travelling Rocks</b><span>Rock #${r.id}: ${esc(r.name)}</span><small>Found me? Tell us at</small><small><b>${SITE_URL}</b></small><small>then hide me again! 🌍</small></div>`).join("")}
       </div>
     </div>`;
-  document.getElementById("add").addEventListener("submit", e => {
+  document.getElementById("add").addEventListener("submit", async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
+    const photo = await readPhoto(d.photo);
     const id = rocks.reduce((m, r) => Math.max(m, r.id), 0) + 1;
-    rocks.push({ id, name: d.name.trim(), painter: d.painter.trim() || "5th class", emoji: d.emoji, color: d.color,
+    rocks.push({ id, name: d.name.trim(), painter: d.painter.trim() || "5th class", emoji: d.emoji, color: d.color, photo,
       journey: [{ date: new Date().toISOString().slice(0, 10), found: "Dublin, Ireland", hidden: "Dublin, Ireland", note: "Painted in class! 🎨" }] });
     save();
     classPage();
