@@ -271,13 +271,26 @@ LANGS.us = Object.assign({}, LANGS.en, { name: "English (US)", flag: "🇺🇸",
   labels_help: "Print this page and stick a label on the back of each rock (or copy it with a Sharpie).",
   just_painted: "Freshly painted! 🎨", no_space: "Not enough storage to save more photos on this device 😕",
   s3: "Found a rock? Awesome! Come here and tell us where!" });
-// Show US right after UK in the list.
-{ const order = ["en", "us"]; Object.keys(LANGS).forEach(k => { if (!order.includes(k)) order.push(k); });
+// Irish English: grand, deadly and full of craic.
+LANGS.ie = Object.assign({}, LANGS.en, { name: "English (Ireland)", flag: "🇮🇪",
+  hero_sub: "Painted rocks travelling the world, one hiding spot at a time. Deadly!",
+  btn_found: "I found a rock, so I did! 🎉",
+  s3: "Found a rock? Deadly! Come here and tell us where!",
+  s4: "Hide it in a different park. Shh, don't be telling anyone where! 🤫",
+  found_intro: "Ah brilliant, you found a Travelling Rock! Tell us where 🌍",
+  msg_ph: "e.g. Found it beside a massive tree, grand! 🌳",
+  no_rock_called: "Ah no, there's no rock called \"{x}\". Have a look at the number on the rock 🔎",
+  no_numbers: "Just the park name, no numbers, grand 😊",
+  r2: "🌿 Be sound to nature.", r4: "🤫 Keep the new hiding spot a secret, go way!",
+  just_painted: "Only after being painted! 🎨", label_hide: "then hide me again, sound! 🌍" });
+// Show US and Irish English right after UK in the list.
+{ const order = ["en", "us", "ie"]; Object.keys(LANGS).forEach(k => { if (!order.includes(k)) order.push(k); });
   const copy = Object.assign({}, LANGS); order.forEach(k => { delete LANGS[k]; LANGS[k] = copy[k]; }); }
 
 let lang = (() => {
   try { const s = localStorage.getItem("travelling-rocks-lang"); if (LANGS[s]) return s; } catch (e) { /* ignore */ }
   if (navigator.language === "en-US") return "us";
+  if (navigator.language === "en-IE") return "ie";
   const b = (navigator.language || "en").slice(0, 2);
   return LANGS[b] ? b : "en";
 })();
