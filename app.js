@@ -67,11 +67,11 @@ const EMOJIS = ["🌊", "⭐", "🦋", "🌈", "🐞", "🌻", "🐬", "🍀", "
 const SAMPLE_ROCKS = [
   { id: 1, name: "Lily", emoji: "🦋", color: "#ffd6a5", painter: "Lily",
     journey: [
-      { date: "2026-11-10", found: "Dublin, Ireland", hidden: "Dublin, Ireland", note: "Rock was born in class! 🎨" },
+      { date: "2026-11-10", found: "Dublin, Ireland", hidden: "Dublin, Ireland", note: "Just painted! 🎨" },
     ] },
-  { id: 2, name: "Rocky", emoji: "⭐", color: "#9bf6ff", painter: "5th class",
+  { id: 2, name: "Rocky", emoji: "⭐", color: "#9bf6ff", painter: "Rock Star",
     journey: [
-      { date: "2026-11-10", found: "Dublin, Ireland", hidden: "Dublin, Ireland", note: "Painted in class" },
+      { date: "2026-11-10", found: "Dublin, Ireland", hidden: "Dublin, Ireland", note: "Just painted! 🎨" },
       { date: "2026-11-12", found: "Paris, France", note: "Someone took me to Paris on holiday ✈️" },
     ] },
 ];
@@ -106,9 +106,8 @@ function readPhoto(file) {
     img.src = URL.createObjectURL(file);
   });
 }
-const photoInput = `<label>📸 Take a photo of the rock</label>
-        <input type="file" name="photo" accept="image/*" capture="environment">
-        <div class="notice">📸 Photo of the <b>rock only</b>: no people, faces, houses or street signs.</div>`;
+const photoInput = `<label>📸 Take a photo of the rock (just the rock!)</label>
+        <input type="file" name="photo" accept="image/*" capture="environment">`;
 const safeSrc = s => typeof s === "string" && s.startsWith("data:image/") ? s : "";
 
 let rocks = load();
@@ -164,8 +163,8 @@ function home() {
       <a class="btn secondary" href="#rocks">Find a rock 🔎</a>
     </section>
     <div class="steps">
-      <div class="card step"><div class="num">🎨</div><b>1. Paint</b><br>Every student paints a rock and gives it a special name.</div>
-      <div class="card step"><div class="num">🌳</div><b>2. Hide</b><br>Take it on a trip and hide it in a safe, allowed place.</div>
+      <div class="card step"><div class="num">🎨</div><b>1. Paint</b><br>Paint a rock and give it a special name.</div>
+      <div class="card step"><div class="num">🌳</div><b>2. Hide</b><br>Hide it in a park, anywhere in the world!</div>
       <div class="card step"><div class="num">🔎</div><b>3. Find</b><br>Found a rock? Come here and tell us where!</div>
       <div class="card step"><div class="num">✈️</div><b>4. Hide again</b><br>Hide it in a different park. Shh, don't tell anyone where! 🤫</div>
     </div>
@@ -206,7 +205,7 @@ function rockPage(id) {
     <div class="card">
       ${rockBadge(r)}
       <h1>#${r.id} ${esc(r.name)}</h1>
-      <p>🎨 Painted by: ${esc(r.painter || "a 5th class student")}<br>
+      <p>🎨 Painted by: ${esc(r.painter || "a rock artist")}<br>
       📍 Last found in: <b>${esc(lastPlace(r))}</b> (now hiding somewhere new 🤫)<br>
       🌍 Countries visited: ${countries(r)} · Updates: ${r.journey.length}</p>
       <a class="btn" href="#found/${r.id}">I found this rock! 🎉</a>
@@ -238,8 +237,7 @@ function found(id = "") {
   app.innerHTML = `
     <h1>🎉 I Found a Rock!</h1>
     <div class="card">
-      <p>Yay, you found a Travelling Rock! Tell us about it so we can follow its journey.</p>
-      <div class="notice">🛡️ Write only the <b>park or area name</b> (like Marlay Park). Never a street, house number, Eircode, your full name or your school.</div>
+      <p>Yay, you found a Travelling Rock! Tell us where 🌍</p>
       ${areaOptions}
       <form id="f">
         <label>Rock number or name</label>
@@ -252,14 +250,14 @@ function found(id = "") {
         <select name="found">${placeOptions("Dublin, Ireland")}</select>
         <label>Date you found it</label>
         <input type="date" name="date" value="${today}" required>
-        <div class="notice">🤫 Now hide the rock in a <b>different park</b>, and don't tell anyone where! The next person who finds it will tell us.</div>
+        <div class="notice">🤫 Now hide it in a new park. Shh, it's a secret!</div>
         <label>A short message (optional)</label>
         <input name="note" maxlength="120" placeholder="e.g. Found it near a big tree! 🌳">
         <button class="btn" type="submit">Update journey 🚀</button>
       </form>
       <div id="msg"></div>
     </div>
-    <p>Can't see your city? Pick the closest one. 😊</p>`;
+`;
   document.getElementById("f").addEventListener("submit", async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
@@ -269,7 +267,7 @@ function found(id = "") {
     const msg = document.getElementById("msg");
     if (!r) { msg.innerHTML = `<p class="notice">Hmm, no rock called "${esc(d.rock)}". Check the number on the rock 🔎</p>`; return; }
     const foundArea = (d.foundArea || "").trim().slice(0, 40);
-    if (/\d/.test(foundArea)) { msg.innerHTML = `<p class="notice">🛡️ Only the park or area name please, no numbers (no house number or Eircode).</p>`; return; }
+    if (/\d/.test(foundArea)) { msg.innerHTML = `<p class="notice">Just the park name please, no numbers 😊</p>`; return; }
     r.journey.push({ date: d.date, found: d.found, foundArea, note: d.note.slice(0, 120), photo });
     if (photo && !r.photo) r.photo = photo;
     if (!save()) { r.journey.pop(); return; }
@@ -279,32 +277,27 @@ function found(id = "") {
 
 function rules() {
   app.innerHTML = `
-    <h1>🛡️ Safety Rules</h1>
+    <h1>🌟 Rock Rules</h1>
     <div class="card">
       <ul class="rules">
-        <li>✅ Hide rocks only in places where it's allowed to leave things.</li>
-        <li>🚶 Never hide rocks on paths, roads or stairs, where someone could trip.</li>
-        <li>⚠️ Never go into dangerous places to find or hide a rock.</li>
-        <li>🌊 Never hide rocks near water, cliffs or other dangerous places.</li>
-        <li>🌿 Don't disturb plants, animals or nature.</li>
-        <li>🚫 Don't leave a rock where it's not allowed to take or leave things.</li>
-        <li>🤔 Not sure it's allowed? Don't hide it there.</li>
-        <li>👨‍👩‍👧 Younger kids play together with an adult.</li>
-        <li>🔒 On the website, write only the park or area name (like Marlay Park). Never a street, address, full name, school or photos of people.</li>
+        <li>🌳 Hide rocks in parks, somewhere safe and easy to reach.</li>
+        <li>🌿 Be kind to nature.</li>
+        <li>📝 Write only the park name, nothing about you.</li>
+        <li>🤫 Keep the new hiding place a secret!</li>
       </ul>
     </div>`;
 }
 
 function classPage() {
   app.innerHTML = `
-    <h1>🎨 For the Class</h1>
+    <h1>🎨 Add a Rock</h1>
     <div class="card no-print">
       <h2>Add a new rock</h2>
       <form id="add">
         <label>Rock name</label>
         <input name="name" required maxlength="30" placeholder="e.g. Sparkle">
-        <label>Painted by (first name only, or "5th class")</label>
-        <input name="painter" maxlength="30" placeholder="5th class">
+        <label>Painted by (first name or nickname)</label>
+        <input name="painter" maxlength="30" placeholder="e.g. Rock Star">
         ${photoInput}
         <label>No photo? Pick an emoji instead</label>
         <select name="emoji">${EMOJIS.map(e => `<option>${e}</option>`).join("")}</select>
@@ -326,8 +319,8 @@ function classPage() {
     const d = Object.fromEntries(new FormData(e.target));
     const photo = await readPhoto(d.photo);
     const id = rocks.reduce((m, r) => Math.max(m, r.id), 0) + 1;
-    rocks.push({ id, name: d.name.trim(), painter: d.painter.trim() || "5th class", emoji: d.emoji, color: d.color, photo,
-      journey: [{ date: new Date().toISOString().slice(0, 10), found: "Dublin, Ireland", hidden: "Dublin, Ireland", note: "Painted in class! 🎨" }] });
+    rocks.push({ id, name: d.name.trim(), painter: d.painter.trim() || "a rock artist", emoji: d.emoji, color: d.color, photo,
+      journey: [{ date: new Date().toISOString().slice(0, 10), found: "Dublin, Ireland", note: "Just painted! 🎨" }] });
     save();
     classPage();
   });
