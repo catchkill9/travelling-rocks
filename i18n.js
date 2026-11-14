@@ -1,6 +1,6 @@
 // Languages for Travelling Rocks. Add a new language by copying the "en" block.
 const LANGS = {
-  en: { name: "English", flag: "🇬🇧", dir: "ltr",
+  en: { name: "English (UK)", flag: "🇬🇧", dir: "ltr",
     nav_home: "Home", nav_rocks: "Find a Rock", nav_found: "I Found a Rock!", nav_rules: "Rules", nav_add: "Add a Rock",
     footer: "🪨 Painted rocks travelling the world, one hiding place at a time 🌍",
     hero_sub: "Painted rocks that travel the world, one hiding place at a time!",
@@ -265,8 +265,19 @@ const LANGS = {
     just_painted: "Acabada de pintar! 🎨", no_space: "Não há espaço para guardar mais fotos neste dispositivo 😕" },
 };
 
+// American English: same as British, only the words that are different.
+LANGS.us = Object.assign({}, LANGS.en, { name: "English (US)", flag: "🇺🇸",
+  park: "Park or neighborhood name", r2: "🌿 Be kind to nature, y'all!",
+  labels_help: "Print this page and stick a label on the back of each rock (or copy it with a Sharpie).",
+  just_painted: "Freshly painted! 🎨", no_space: "Not enough storage to save more photos on this device 😕",
+  s3: "Found a rock? Awesome! Come here and tell us where!" });
+// Show US right after UK in the list.
+{ const order = ["en", "us"]; Object.keys(LANGS).forEach(k => { if (!order.includes(k)) order.push(k); });
+  const copy = Object.assign({}, LANGS); order.forEach(k => { delete LANGS[k]; LANGS[k] = copy[k]; }); }
+
 let lang = (() => {
   try { const s = localStorage.getItem("travelling-rocks-lang"); if (LANGS[s]) return s; } catch (e) { /* ignore */ }
+  if (navigator.language === "en-US") return "us";
   const b = (navigator.language || "en").slice(0, 2);
   return LANGS[b] ? b : "en";
 })();
