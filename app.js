@@ -238,6 +238,26 @@ function home() {
   makeMap(document.getElementById("map"), rocks);
 }
 
+// Forgiving search: finds "Lily" even if you type "loly" or "lilly" (small typos are OK).
+function typos(a, b) {
+  const d = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = d[0]; d[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = d[j];
+      d[j] = Math.min(d[j] + 1, d[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return d[b.length];
+}
+function similar(name, q) {
+  if (!name) return false;
+  if (name.includes(q)) return true;
+  const allowed = q.length <= 3 ? 0 : q.length <= 6 ? 1 : 2;
+  return name.split(/\s+/).concat(name).some(w => typos(w, q) <= allowed || typos(w.slice(0, q.length), q) <= allowed);
+}
+
 function rockList(q = "") {
   app.innerHTML = `
     <h1>${t("find_title")}</h1>
@@ -245,8 +265,8 @@ function rockList(q = "") {
     <div class="rock-grid" id="grid"></div>`;
   const grid = document.getElementById("grid");
   const draw = text => {
-    const t = text.trim().toLowerCase().replace("#", "");
-    const list = rocks.filter(r => !t || r.name.toLowerCase().includes(t) || String(r.id) === t);
+    const q = text.trim().toLowerCase().replace("#", "");
+    const list = rocks.filter(r => !q || String(r.id) === q || [r.name, r.painter].some(s => similar(String(s || "").toLowerCase(), q)));
     grid.innerHTML = list.length ? list.map(r => `
       <a class="card rock-card" href="#rock/${r.id}">
         ${rockBadge(r)}
