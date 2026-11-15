@@ -191,6 +191,13 @@ const countries = r => new Set(r.journey.map(j => j.found.split(", ")[1])).size;
 const FLAGS = "🇮🇪 🇮🇱 🇫🇷 🇪🇸 🇮🇹 🇩🇪 🇵🇹 🇬🇧 🇺🇸 🇨🇦 🇲🇽 🇧🇷 🇦🇷 🇯🇵 🇰🇷 🇨🇳 🇮🇳 🇦🇺 🇳🇿 🇿🇦 🇪🇬 🇬🇷 🇳🇱 🇧🇪 🇨🇭 🇦🇹 🇸🇪 🇳🇴 🇩🇰 🇫🇮 🇵🇱 🇨🇿 🇭🇷 🇹🇷 🇲🇦 🇰🇪 🇳🇬 🇹🇭 🇻🇳 🇵🇭 🇮🇩 🇸🇬 🇵🇪 🇨🇱 🇨🇴 🇯🇲 🇮🇸 🇺🇦".split(" ");
 const MAP_COLORS = ["#f9a8d4", "#fde047", "#86efac", "#fdba74", "#c4b5fd", "#f87171", "#67e8f9", "#fca5a5"];
 const prop = (f, k) => f.properties[k] ?? f.properties[k.toUpperCase()];
+// Country name in the language the site is set to (the phone's browser knows every country's name in every language).
+function countryName(f) {
+  const code = ["iso_a2", "wb_a2", "iso_a2_eh", "postal"].map(k => String(prop(f, k) || "")).find(c => /^[A-Z]{2}$/.test(c));
+  const locale = lang === "ie" ? "en-IE" : lang;
+  try { if (code) return new Intl.DisplayNames([locale, "en"], { type: "region" }).of(code); } catch (e) { /* fall back */ }
+  return String(prop(f, "name") || "");
+}
 let countriesPromise = null;
 function getCountries() {
   if (!countriesPromise) countriesPromise = (async () => {
@@ -228,7 +235,7 @@ function makeMap(el, rockList) {
     countries = L.geoJSON(data, {
       pane: "countries",
       style: f => ({ fillColor: MAP_COLORS[(prop(f, "mapcolor7") || 1) % MAP_COLORS.length], fillOpacity: 1, color: "#4a4a4a", weight: 0.7 }),
-      onEachFeature: (f, layer) => layer.bindTooltip(String(prop(f, "name") || ""), { sticky: true }),
+      onEachFeature: (f, layer) => layer.bindTooltip(() => countryName(f), { sticky: true }),
     }).addTo(map);
     update();
   });
