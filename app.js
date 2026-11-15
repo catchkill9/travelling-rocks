@@ -468,14 +468,7 @@ function classPage() {
         <button class="btn" type="submit">${t("add_btn")}</button>
       </form>
     </div>
-    <div class="card" style="margin-top:12px">
-      <h2>${t("labels_title")}</h2>
-      <p class="no-print">${t("labels_help")}</p>
-      <button class="btn secondary no-print" onclick="window.print()">${t("print_btn")}</button>
-      <div class="labels" style="margin-top:12px">
-        ${rocks.map(r => `<div class="label"><b>🪨 Travelling Rocks</b><span>${t("label_rock")} #${r.id}: ${esc(r.name)}</span><small>${t("label_found")}</small><small><b dir="ltr">${SITE_URL}</b></small><small>${t("label_hide")}</small></div>`).join("")}
-      </div>
-    </div>`;
+`;
   document.getElementById("add").addEventListener("submit", async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
