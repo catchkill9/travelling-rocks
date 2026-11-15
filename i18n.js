@@ -265,6 +265,30 @@ const LANGS = {
     just_painted: "Acabada de pintar! 🎨", no_space: "Não há espaço para guardar mais fotos neste dispositivo 😕" },
 };
 
+// Distance counter words.
+Object.entries({
+  en: ["Distance travelled", "🏆 Most travelled rocks", "km", "No rock has travelled yet. Be the first! 🚀"],
+  he: ["מרחק שעברה", "🏆 האבנים שהכי טיילו", "ק״מ", "אף אבן עוד לא טיילה. תהיו הראשונים! 🚀"],
+  es: ["Distancia recorrida", "🏆 Las piedras más viajeras", "km", "Ninguna piedra ha viajado todavía. ¡Sé el primero! 🚀"],
+  fr: ["Distance parcourue", "🏆 Les galets les plus voyageurs", "km", "Aucun galet n'a encore voyagé. Sois le premier ! 🚀"],
+  it: ["Distanza percorsa", "🏆 I sassi più viaggiatori", "km", "Nessun sasso ha ancora viaggiato. Sii il primo! 🚀"],
+  de: ["Zurückgelegte Strecke", "🏆 Die weitgereistesten Steine", "km", "Noch kein Stein ist gereist. Sei der Erste! 🚀"],
+  ga: ["Fad taistil", "🏆 Na clocha is mó a thaistil", "km", "Níor thaistil cloch ar bith fós. Bí ar an gcéad duine! 🚀"],
+  pt: ["Distância percorrida", "🏆 As pedras mais viajadas", "km", "Nenhuma pedra viajou ainda. Sê o primeiro! 🚀"],
+}).forEach(([k, [a, b, c, d]]) => Object.assign(LANGS[k], { km_label: a, top_title: b, km: c, top_empty: d }));
+
+// Medal names: [title, abroad, 100 km, 1000 km, 5 parks, 3 countries, 10 finds, none yet]
+Object.entries({
+  en: ["🏅 Medals", "Left Ireland!", "100 km!", "1,000 km!", "5 parks!", "3 countries!", "Found 10 times!", "No medals yet. Keep travelling! ✨"],
+  he: ["🏅 מדליות", "יצאה מאירלנד!", "100 ק״מ!", "1,000 ק״מ!", "5 פארקים!", "3 מדינות!", "נמצאה 10 פעמים!", "עוד אין מדליות. ממשיכים לטייל! ✨"],
+  es: ["🏅 Medallas", "¡Salió de Irlanda!", "¡100 km!", "¡1.000 km!", "¡5 parques!", "¡3 países!", "¡Encontrada 10 veces!", "Todavía no hay medallas. ¡Sigue viajando! ✨"],
+  fr: ["🏅 Médailles", "A quitté l'Irlande !", "100 km !", "1 000 km !", "5 parcs !", "3 pays !", "Trouvé 10 fois !", "Pas encore de médailles. Continue à voyager ! ✨"],
+  it: ["🏅 Medaglie", "Ha lasciato l'Irlanda!", "100 km!", "1.000 km!", "5 parchi!", "3 paesi!", "Trovato 10 volte!", "Ancora nessuna medaglia. Continua a viaggiare! ✨"],
+  de: ["🏅 Medaillen", "Irland verlassen!", "100 km!", "1.000 km!", "5 Parks!", "3 Länder!", "10-mal gefunden!", "Noch keine Medaillen. Weiter reisen! ✨"],
+  ga: ["🏅 Bonn", "D'fhág sí Éire!", "100 km!", "1,000 km!", "5 pháirc!", "3 thír!", "Aimsíodh 10 n-uaire í!", "Gan bhonn fós. Lean ort ag taisteal! ✨"],
+  pt: ["🏅 Medalhas", "Saiu da Irlanda!", "100 km!", "1.000 km!", "5 parques!", "3 países!", "Encontrada 10 vezes!", "Ainda sem medalhas. Continua a viajar! ✨"],
+}).forEach(([k, m]) => Object.assign(LANGS[k], { medals_title: m[0], m_abroad: m[1], m_100: m[2], m_1000: m[3], m_parks: m[4], m_countries: m[5], m_finds: m[6], medals_none: m[7] }));
+
 // American English: same as British, only the words that are different.
 LANGS.us = Object.assign({}, LANGS.en, { name: "English (US)", flag: "🇺🇸",
   park: "Park or neighborhood name", r2: "🌿 Be kind to nature, y'all!",

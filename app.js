@@ -185,6 +185,30 @@ const placeOptions = sel => Object.keys(PLACES).map(p => `<option ${p === sel ? 
 const rockBadge = r => safeSrc(r.photo)
   ? `<img class="rock-photo" src="${safeSrc(r.photo)}" alt="${esc(r.name)}">`
   : `<div class="rock-emoji" style="background:${esc(r.color)}">${esc(r.emoji)}</div>`;
+// Kilometres the rock travelled: adds up the straight-line distance between every place it was found.
+function kmBetween([a1, o1], [a2, o2]) {
+  const R = 6371, rad = x => x * Math.PI / 180;
+  const h = Math.sin(rad(a2 - a1) / 2) ** 2 + Math.cos(rad(a1)) * Math.cos(rad(a2)) * Math.sin(rad(o2 - o1) / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const rockKm = r => {
+  let km = 0, prev = null;
+  r.journey.forEach(j => { const c = coord(j.found, j.foundArea); if (c) { if (prev) km += kmBetween(prev, c); prev = c; } });
+  return Math.round(km);
+};
+const kmText = r => `${rockKm(r).toLocaleString(lang === "ie" ? "en-IE" : lang)} ${t("km")}`;
+// Medals a rock has earned on its journey.
+const medals = r => {
+  const km = rockKm(r), parks = new Set(r.journey.map(j => (j.foundArea || "").toLowerCase()).filter(Boolean)).size;
+  return [
+    ["✈️", "m_abroad", r.journey.some(j => !j.found.endsWith("Ireland"))],
+    ["💯", "m_100", km >= 100],
+    ["🚀", "m_1000", km >= 1000],
+    ["🌳", "m_parks", parks >= 5],
+    ["🗺️", "m_countries", countries(r) >= 3],
+    ["🔎", "m_finds", r.journey.length >= 10],
+  ].filter(m => m[2]);
+};
 const countries = r => new Set(r.journey.map(j => j.found.split(", ")[1])).size;
 
 // Bright wall-map colours. Natural Earth gives each country a colour number so neighbours never match.
@@ -281,6 +305,13 @@ function home() {
       <div class="map-flags">${FLAGS.slice(0, 24).join("")}</div>
       <div id="map"></div>
       <div class="map-flags">${FLAGS.slice(24).join("")}</div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h2>${t("top_title")}</h2>
+      ${(() => {
+        const top = rocks.map(r => [r, rockKm(r)]).filter(([, km]) => km > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        return top.length ? `<ol class="top">${top.map(([r], i) => `<li><span>${["🥇", "🥈", "🥉", "4", "5"][i]}</span> <a href="#rock/${r.id}">${esc(r.emoji)} #${r.id} ${esc(r.name)}</a> <b>${kmText(r)}</b></li>`).join("")}</ol>` : `<p>${t("top_empty")}</p>`;
+      })()}
     </div>`;
   makeMap(document.getElementById("map"), rocks);
 }
@@ -319,6 +350,7 @@ function rockList(q = "") {
         ${rockBadge(r)}
         <b>#${r.id} ${esc(r.name)}</b><br>
         📍 ${esc(lastPlace(r))}<br>
+        📏 ${kmText(r)} ${medals(r).map(m => m[0]).join("")}<br>
         <span class="status ${r.journey.length > 1 ? "" : "home"}">${r.journey.length > 1 ? t("travelling") : t("at_home")}</span>
       </a>`).join("") : `<p>${t("no_match")}</p>`;
   };
@@ -336,7 +368,10 @@ function rockPage(id) {
       <h1>#${r.id} ${esc(r.name)}</h1>
       <p>🎨 ${t("painted_by")}: ${esc(r.painter || t("artist"))}<br>
       📍 ${t("last_found")}: <b>${esc(lastPlace(r))}</b> (${t("hiding_new")})<br>
+      📏 ${t("km_label")}: <b class="km">${kmText(r)}</b><br>
       🌍 ${t("countries")}: ${countries(r)} · ${t("updates")}: ${r.journey.length}</p>
+      <h2>${t("medals_title")}</h2>
+      ${medals(r).length ? `<div class="medals">${medals(r).map(([e, k]) => `<div class="medal"><span>${e}</span>${t(k)}</div>`).join("")}</div>` : `<p>${t("medals_none")}</p>`}
       <a class="btn" href="#found/${r.id}">${t("found_this")}</a>
     </div>
     <div class="card" style="margin-top:12px">
