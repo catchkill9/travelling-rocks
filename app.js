@@ -473,9 +473,14 @@ function classPage() {
       <p class="no-print">${t("labels_help")}</p>
       <button class="btn secondary no-print" onclick="window.print()">${t("print_btn")}</button>
       <div class="labels" style="margin-top:12px">
-        ${rocks.map(r => `<div class="label"><b>🪨 Travelling Rocks</b><span>${t("label_rock")} #${r.id}: ${esc(r.name)}</span><small>${t("label_found")}</small><small><b dir="ltr">${SITE_URL}</b></small><small>${t("label_hide")}</small></div>`).join("")}
+        ${rocks.map(r => `<div class="label"><b>🪨 Travelling Rocks</b><span>${t("label_rock")} #${r.id}: ${esc(r.name)}</span><div class="qr" data-id="${r.id}"></div><small>${t("label_found")}</small><small><b dir="ltr">${SITE_URL}</b></small><small>${t("label_hide")}</small></div>`).join("")}
       </div>
     </div>`;
+  // QR code on each label: scanning it opens "I found this rock!" with the rock number already filled in.
+  document.querySelectorAll(".qr").forEach(el => {
+    if (typeof QRCode === "undefined") { el.remove(); return; }
+    new QRCode(el, { text: `https://${SITE_URL}/#found/${el.dataset.id}`, width: 84, height: 84, correctLevel: QRCode.CorrectLevel.M });
+  });
   document.getElementById("add").addEventListener("submit", async e => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(e.target));
