@@ -187,13 +187,51 @@ const rockBadge = r => safeSrc(r.photo)
   : `<div class="rock-emoji" style="background:${esc(r.color)}">${esc(r.emoji)}</div>`;
 const countries = r => new Set(r.journey.map(j => j.found.split(", ")[1])).size;
 
+// Bright wall-map colours. Natural Earth gives each country a colour number so neighbours never match.
+const FLAGS = "🇮🇪 🇮🇱 🇫🇷 🇪🇸 🇮🇹 🇩🇪 🇵🇹 🇬🇧 🇺🇸 🇨🇦 🇲🇽 🇧🇷 🇦🇷 🇯🇵 🇰🇷 🇨🇳 🇮🇳 🇦🇺 🇳🇿 🇿🇦 🇪🇬 🇬🇷 🇳🇱 🇧🇪 🇨🇭 🇦🇹 🇸🇪 🇳🇴 🇩🇰 🇫🇮 🇵🇱 🇨🇿 🇭🇷 🇹🇷 🇲🇦 🇰🇪 🇳🇬 🇹🇭 🇻🇳 🇵🇭 🇮🇩 🇸🇬 🇵🇪 🇨🇱 🇨🇴 🇯🇲 🇮🇸 🇺🇦".split(" ");
+const MAP_COLORS = ["#f9a8d4", "#fde047", "#86efac", "#fdba74", "#c4b5fd", "#f87171", "#67e8f9", "#fca5a5"];
+const prop = (f, k) => f.properties[k] ?? f.properties[k.toUpperCase()];
+let countriesPromise = null;
+function getCountries() {
+  if (!countriesPromise) countriesPromise = (async () => {
+    for (const url of [
+      "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_110m_admin_0_countries.geojson",
+      "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+    ]) {
+      try { const r = await fetch(url); if (r.ok) return await r.json(); } catch (e) { /* try next */ }
+    }
+    return null;
+  })();
+  return countriesPromise;
+}
+
 function makeMap(el, rockList) {
   if (activeMap) { activeMap.remove(); activeMap = null; }
   if (typeof L === "undefined") { el.innerHTML = `<p class='notice'>${t("map_fail")}</p>`; return; }
-  activeMap = L.map(el, { scrollWheelZoom: false }).setView([50, 5], 3);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap", maxZoom: 13,
-  }).addTo(activeMap);
+  activeMap = L.map(el, { scrollWheelZoom: false, minZoom: 1 }).setView([50, 5], 3);
+  el.classList.add("ocean");
+  // Colourful country map (like a school wall map). Zoom in close and the real street map appears to show the park.
+  const map = activeMap;
+  const streets = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap", maxZoom: 13 });
+  map.createPane("countries"); map.getPane("countries").style.zIndex = 250;
+  let countries = null;
+  const update = () => {
+    const close = map.getZoom() >= 9;
+    if (close && !map.hasLayer(streets)) streets.addTo(map);
+    if (!close && map.hasLayer(streets)) map.removeLayer(streets);
+    if (countries) countries.setStyle({ fillOpacity: close ? 0 : 1, opacity: close ? 0 : 1 });
+  };
+  map.on("zoomend", update);
+  getCountries().then(data => {
+    if (activeMap !== map) return;
+    if (!data) { streets.addTo(map); el.classList.remove("ocean"); return; }
+    countries = L.geoJSON(data, {
+      pane: "countries",
+      style: f => ({ fillColor: MAP_COLORS[(prop(f, "mapcolor7") || 1) % MAP_COLORS.length], fillOpacity: 1, color: "#4a4a4a", weight: 0.7 }),
+      onEachFeature: (f, layer) => layer.bindTooltip(String(prop(f, "name") || ""), { sticky: true }),
+    }).addTo(map);
+    update();
+  });
   const bounds = [];
   rockList.forEach(r => {
     const path = [];
@@ -233,7 +271,9 @@ function home() {
     <div class="card">
       <h2>${t("map_title")}</h2>
       <p>${t("stats", { n: rocks.length, m: totalMoves })}</p>
+      <div class="map-flags">${FLAGS.slice(0, 24).join("")}</div>
       <div id="map"></div>
+      <div class="map-flags">${FLAGS.slice(24).join("")}</div>
     </div>`;
   makeMap(document.getElementById("map"), rocks);
 }
